@@ -1,0 +1,20 @@
+{
+  "onboarding": {
+    "titulo": "Integração de Novo Funcionário",
+    "passos": [
+      "1. Apresentar a equipe e escritório",
+      "2. Configurar acesso aos sistemas",
+      "3. Explicar processos principais",
+      "4. Definir metas e responsabilidades"
+    ]
+  },
+  "vendas": {
+    "titulo": "Processo Comercial",
+    "passos": [
+      "1. Qualificação do lead",
+      "2. Apresentação da proposta",
+      "3. Negociação de valores",
+      "4. Fechamento e onboarding"
+    ]
+  }
+}
