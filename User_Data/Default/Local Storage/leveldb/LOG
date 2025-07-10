@@ -1,6 +1,0 @@
-2025/05/30-18:32:33.799 3bf0 Reusing MANIFEST C:\Users\Samsung\OneDrive\Documents\DHS\WWebBot\User_Data\Default\Local Storage\leveldb/MANIFEST-000001
-2025/05/30-18:32:33.808 3bf0 Recovering log #4
-2025/05/30-18:32:33.811 3bf0 Reusing old log C:\Users\Samsung\OneDrive\Documents\DHS\WWebBot\User_Data\Default\Local Storage\leveldb/000004.log 
-2025/05/30-18:33:10.042 a4c Level-0 table #7: started
-2025/05/30-18:33:10.050 a4c Level-0 table #7: 15226 bytes OK
-2025/05/30-18:33:10.052 a4c Delete type=0 #4
