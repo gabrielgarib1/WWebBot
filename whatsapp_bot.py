@@ -3,8 +3,8 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from webdriver_manager.chrome import ChromeDriverManager
-from selenium.webdriver.chrome.service import Service
+from webdriver_manager.firefox import GeckoDriverManager
+from selenium.webdriver.firefox.service import Service
 import time
 import json
 import os
@@ -20,7 +20,8 @@ class EmpresaWhatsAppBot:
         #configurations
         self.grupos = grupos
         self.dev_mode = True
-        self.scheduled_messages = False  
+        self.scheduled_messages = False 
+        #insert an if statement to select OS
         #static data
         self.tarefas = self.carregar_dados('tarefas.json')
         self.processos = self.carregar_dados('processos.json')
@@ -47,14 +48,23 @@ class EmpresaWhatsAppBot:
             json.dump(dados, f, indent=2, ensure_ascii=False)
 
     def inicializar_driver(self):
-        # Initializes and configures the Chrome WebDriver for WhatsApp Web
+        # Initializes and configures the Firefox WebDriver for WhatsApp Web
+        #switch between two service options based on OS
         try:
-            chrome_options = webdriver.ChromeOptions()
-            chrome_options.add_argument(r"--user-data-dir=C:\\Users\\Samsung\\OneDrive\\Documents\\DHS\\WWebBot\\User_Data")
-            self.driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
+            firefox_options = webdriver.FirefoxOptions()
+            # IMPORTANT: You must create a dedicated Firefox profile for the bot to save your login session.
+            # 1. Open a command prompt/terminal and run: firefox.exe -P
+            # 2. In the dialog, create a new profile (e.g., "WhatsAppBot").
+            # 3. In Firefox's address bar, go to about:profiles. Find your new profile and copy its "Root Directory" path.
+            # 4. Paste the path below. You cannot reuse a Chrome user data directory.
+            profile_path = r"C:\path\to\your\new\firefox_profile" # <-- CHANGE THIS PATH
+            firefox_options.add_argument("-profile")
+            firefox_options.add_argument(profile_path)
+
+            self.driver = webdriver.Firefox(service=Service(GeckoDriverManager().install()), options=firefox_options)
             self.driver.get('https://web.whatsapp.com/')
-            print("🚀 Inicializando WhatsApp Web...")
-            print("📱 Escaneie o QR Code com seu celular")
+            print("🚀 Inicializando WhatsApp Web com Firefox...")
+            print("📱 Se for o primeiro login neste perfil, escaneie o QR Code com seu celular.")
             print("⏰ Aguardando login...")
             WebDriverWait(self.driver, 60).until(
                 EC.presence_of_element_located((By.XPATH, '//div[@contenteditable="true"][@data-tab="3"]'))
@@ -64,7 +74,7 @@ class EmpresaWhatsAppBot:
         except Exception as e:
             logging.error(f"Erro ao inicializar driver: {e}")    
             return False
-
+    
     def encontrar_contato(self, who):
         # Finds and selects a WhatsApp contact or group by name
         try:
