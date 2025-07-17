@@ -10,7 +10,7 @@ import json
 import os
 from datetime import datetime, timedelta
 import logging
-import schedule
+import schedule     
 
 
 class EmpresaWhatsAppBot:
@@ -47,21 +47,23 @@ class EmpresaWhatsAppBot:
         with open(arquivo, 'w', encoding='utf-8') as f:
             json.dump(dados, f, indent=2, ensure_ascii=False)
 
-    def inicializar_driver(self):
+    def inicializar_driver(self,profile_path=os.getcwd()):
         # Initializes and configures the Firefox WebDriver for WhatsApp Web
         #switch between two service options based on OS
         try:
             firefox_options = webdriver.FirefoxOptions()
-            # IMPORTANT: You must create a dedicated Firefox profile for the bot to save your login session.
-            # 1. Open a command prompt/terminal and run: firefox.exe -P
-            # 2. In the dialog, create a new profile (e.g., "WhatsAppBot").
-            # 3. In Firefox's address bar, go to about:profiles. Find your new profile and copy its "Root Directory" path.
-            # 4. Paste the path below. You cannot reuse a Chrome user data directory.
-            profile_path = r"C:\path\to\your\new\firefox_profile" # <-- CHANGE THIS PATH
-            firefox_options.add_argument("-profile")
-            firefox_options.add_argument(profile_path)
+            profile_path+="/User_Data"
+            # # Create directory if it doesn't exist
+            os.makedirs(profile_path, exist_ok=True)    
+            firefox_profile = webdriver.FirefoxProfile(profile_path)
 
-            self.driver = webdriver.Firefox(service=Service(GeckoDriverManager().install()), options=firefox_options)
+            firefox_options.add_argument("-profile")
+            # # firefox_options.add_argument(profile_path)
+            # firefox_profile.set_preference("media.navigator.permission.disabled", True)
+            # firefox_profile.set_preference("dom.webnotifications.enabled", False)
+            # firefox_profile.set_preference("media.autoplay.default", 0)
+            # self.driver = webdriver.Firefox(service=Service(GeckoDriverManager().install()))
+            self.driver = webdriver.Firefox(service=Service(GeckoDriverManager().install()), options=firefox_options, firefox_profile=firefox_profile)
             self.driver.get('https://web.whatsapp.com/')
             print("🚀 Inicializando WhatsApp Web com Firefox...")
             print("📱 Se for o primeiro login neste perfil, escaneie o QR Code com seu celular.")
@@ -146,7 +148,7 @@ class EmpresaWhatsAppBot:
 
 
     def adicionar_tarefa(self, usuario, descricao):
-        '''
+        '''weekly_checkin
         Another mathod to a future implementation of chat user - machine
         '''
         pass
