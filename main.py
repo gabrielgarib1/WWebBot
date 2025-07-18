@@ -6,6 +6,9 @@ Funcionalidades: Tarefas, Wiki, Comunicação organizada
 from whatsapp_bot import EmpresaWhatsAppBot
 import schedule
 import logging
+import selenium.common.exceptions
+from inputimeout import inputimeout, TimeoutOccurred
+
 # Configurar logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -23,9 +26,9 @@ def main():
     print("🤖 Iniciando Bot WhatsApp da Empresa...")
     
     # modo = 'schedule'     #'manual' ou 'schedule'
-    modo = 'manual'
+    modo = 'teste'
     print("👍Modo: ", modo)
-    grupos = {"test": "Bot testes"}
+    grupos = "Testes-chatbot"
     bot = EmpresaWhatsAppBot(grupos)
     
     # Inicializar WhatsApp Web
@@ -43,21 +46,43 @@ def main():
             print("\n⚠️  Mantenha este programa rodando!")
             print("🛑 Pressione Ctrl+C para parar")
             while True:
-                schedule.run_pending()
-        elif modo == 'manual':
-            print("🚀 Bot funcionando em modo manual! Digite 'send' para enviar uma mensagem de teste ou 'quit' para sair.")
-            while True:
-                comando = input("> ").strip().lower()
-                if comando == 'send':
-                    success = bot.encontrar_contato(bot.grupos[0])
-                    if success:
-                        bot.enviar_mensagem("Mensagem de teste ativada manualmente!")
+                try:
+                    bot.driver.title  # This will raise if browser is closed
+                    schedule.run_pending()
+                except selenium.common.exceptions.WebDriverException as e:
+                    if "invalid session id" in str(e) or "disconnected" in str(e):
+                        print("🛑 O navegador foi fechado. Encerrando o bot.")
+                        break
                     else:
-                        print("❌ Erro ao encontrar o grupo de teste.")
-                elif comando == 'quit':
-                    break
-                else:
-                    print("Comando inválido. Digite 'send' ou 'quit'.")
+                        raise
+        elif modo == 'teste':
+            print("🚀 Bot funcionando em modo manual! Digite 's' para enviar uma mensagem de teste ou 'q' para sair.")
+            while True:
+                try:
+                    # Check browser status before waiting for input
+                    bot.driver.title
+                    # comando = input("> ")
+                    try:
+                        comando = inputimeout(prompt="> ", timeout=5).strip().lower()
+                    except TimeoutOccurred:
+                        continue  # Timeout, loop again to check browser statu
+                    if comando == 's':
+                        success = bot.encontrar_contato()
+                        if success:
+                            # inputimeout(prompt="press enter to send message: ", timeout=5).strip().lower()
+                            bot.enviar_mensagem("Mensagem de teste ativada manualmente!")
+                        else:
+                            print("❌ Erro ao encontrar o grupo de teste.")
+                    elif comando == 'q':
+                        break
+                    else:
+                        print("Comando inválido. Digite 'send' ou 'quit'.")
+                except selenium.common.exceptions.WebDriverException as e:
+                    if "invalid session id" in str(e) or "disconnected" in str(e):
+                        print("🛑 O navegador foi fechado. Encerrando o bot.")
+                        break
+                    else:
+                        raise
         else:
             print("❌ Modo inválido selecionado. Saindo.")
     except KeyboardInterrupt:

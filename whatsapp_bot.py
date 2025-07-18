@@ -5,6 +5,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.firefox import GeckoDriverManager
 from selenium.webdriver.firefox.service import Service
+from selenium.webdriver.common.keys import Keys
 import time
 import json
 import os
@@ -37,7 +38,7 @@ class EmpresaWhatsAppBot:
         
     def set_mode(self,mode):
         self.dev_mode= mode
-        print('You set dev_mode to: ',mode)
+        print('You set mode to: ',mode)
         return
     def set_schedule_messages(self,state):
         self.scheduled_messages = state
@@ -55,15 +56,23 @@ class EmpresaWhatsAppBot:
             profile_path+="/User_Data"
             # # Create directory if it doesn't exist
             os.makedirs(profile_path, exist_ok=True)    
-            firefox_profile = webdriver.FirefoxProfile(profile_path)
+            firefox_options.add_argument(f'-profile')
+            firefox_options.add_argument(profile_path)
+            # firefox_options.add_argument(f"user-data-dir={profile_path}")
+            firefox_options.set_preference("media.navigator.permission.disabled", True)#disable permission prompts
+            firefox_options.set_preference("dom.webnotifications.enabled", False)#disable notification popus
+            firefox_options.set_preference("media.autoplay.default", 0)#allows all media to autoplay
+            firefox_options.set_preference("permissions.default.microphone", 2)  # Block microphone
+            firefox_options.set_preference("permissions.default.camera", 2)      # Block camera
+            firefox_options.set_preference("permissions.default.desktop-notification", 2)  # Block notifications
+            firefox_options.set_preference("privacy.donottrackheader.enabled", True)       # Enable Do Not Track
+            firefox_options.set_preference("browser.download.folderList", 2)               # Use custom download dir
+            # firefox_options.set_preference("browser.helperApps.neverAsk.saveToDisk", "application/pdf")  # Auto-download PDFs
+            firefox_options.set_preference("pdfjs.disabled", True)                         # Disable built-in PDF viewer
 
-            firefox_options.add_argument("-profile")
-            # # firefox_options.add_argument(profile_path)
-            # firefox_profile.set_preference("media.navigator.permission.disabled", True)
-            # firefox_profile.set_preference("dom.webnotifications.enabled", False)
-            # firefox_profile.set_preference("media.autoplay.default", 0)
             # self.driver = webdriver.Firefox(service=Service(GeckoDriverManager().install()))
-            self.driver = webdriver.Firefox(service=Service(GeckoDriverManager().install()), options=firefox_options, firefox_profile=firefox_profile)
+            self.driver = webdriver.Firefox(service=Service(GeckoDriverManager().install()), 
+                                            options=firefox_options)
             self.driver.get('https://web.whatsapp.com/')
             print("🚀 Inicializando WhatsApp Web com Firefox...")
             print("📱 Se for o primeiro login neste perfil, escaneie o QR Code com seu celular.")
@@ -77,38 +86,35 @@ class EmpresaWhatsAppBot:
             logging.error(f"Erro ao inicializar driver: {e}")    
             return False
     
-    def encontrar_contato(self, who):
+    def encontrar_contato(self):
         # Finds and selects a WhatsApp contact or group by name
         try:
+            
             search_box = WebDriverWait(self.driver, 10).until(
                 EC.element_to_be_clickable((By.XPATH, '//div[@contenteditable="true"][@data-tab="3"]'))
             )
             search_box.clear()
-            search_box.send_keys(who)
+            search_box.send_keys(self.grupos)
             contact = WebDriverWait(self.driver, 10).until(
-                EC.element_to_be_clickable((By.XPATH, f'//span[@title="{who}"]'))
+                EC.element_to_be_clickable((By.XPATH, f'//span[@title="{self.grupos}"]'))
             )
             contact.click()
             return True
         except Exception as e:
-            logging.error(f"Erro ao encontrar contato {who}: {e}")
+            logging.error(f"Erro ao encontrar contato {self.grupos}: {e}")
             return False
 
-    def enviar_mensagem(self, mensagem, who):
+    def enviar_mensagem(self, mensagem):
         # Sends a message to the currently open WhatsApp chat
         try:
             message_box = WebDriverWait(self.driver, 10).until(
                 EC.element_to_be_clickable((By.XPATH, '//div[@contenteditable="true"][@data-tab="10"]'))
             )
-            linhas = mensagem.split('\n')
-            for i, linha in enumerate(linhas):
-                message_box.send_keys(linha)
-                if i < len(linhas) - 1:
-                    message_box.send_keys('\n')
-            send_button = WebDriverWait(self.driver, 10).until(
-                EC.element_to_be_clickable((By.XPATH, '//span[@data-icon="send"]'))
-            )
-            send_button.click()
+            message_box.click()  # Ensure the box is focused
+            for char in mensagem:
+                message_box.send_keys(char)
+                time.sleep(0.01)  # Small delay can help with reliability
+            message_box.send_keys(Keys.ENTER)
             logging.info(f"Mensagem enviada: {mensagem[:50]}...")
             return True
         except Exception as e:
@@ -167,4 +173,3 @@ class EmpresaWhatsAppBot:
 
 
 
-    
