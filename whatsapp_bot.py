@@ -15,33 +15,43 @@ import schedule
 
 
 class EmpresaWhatsAppBot:
-    def __init__(self, grupos):
+    def __init__(self, grupos,mode='test'):
+
         #code variables
         self.driver = None
+
         #configurations
-        self.grupos = grupos
-        self.dev_mode = True
-        self.scheduled_messages = False 
-        #insert an if statement to select OS
+        self.set_mode(mode)
+        self.grupos = grupos #limita o acesso a grupos específicos
+
         #static data
-        self.tarefas = self.carregar_dados('tarefas.json')
-        self.processos = self.carregar_dados('processos.json')
-        self.clientes = self.carregar_dados('clientes.json')
-        self.funcionarios = self.carregar_dados('funcionarios.json')
-    def carregar_dados(self, arquivo):
-        # Loads data from a JSON file
-        try:
-            with open(arquivo, 'r', encoding='utf-8') as f:
-                return json.load(f)
-        except FileNotFoundError:
-            return {}
-        
+        # self.bd_path =os.getcwd(), "BD_enterprise")# Ensure BD_enterprise folder exists
+        datas=["tarefas","processos","clientes","funcionarios"]
+        self.criar_bd(datas)        
+        # self.tarefas = self.carregar_dados('tarefas.json')
+        # self.processos = self.carregar_dados('processos.json')
+        # self.clientes = self.carregar_dados('clientes.json')
+        # self.funcionarios = self.carregar_dados('funcionarios.json')
+
+
+    def criar_bd(self, list_json, bd_name='BD_enterprise'):
+        bdfolder_path = os.path.join(os.getcwd(), bd_name)
+        os.makedirs(bdfolder_path, exist_ok=True)
+        self.bd_path = bdfolder_path  # Salva o caminho para uso posterior
+        for file in list_json:
+            path = os.path.join(bdfolder_path, file + ".json")
+            # Cria o arquivo se não existir
+            if not os.path.exists(path):
+                with open(path, 'w', encoding='utf-8') as f:
+                    json.dump({}, f, indent=2, ensure_ascii=False)
+            # Carrega o conteúdo do arquivo (ou dicionário vazio) em self.<file>
+            with open(path, 'r', encoding='utf-8') as f:
+                setattr(self, file, json.load(f))
+                
     def set_mode(self,mode):
-        self.dev_mode= mode
+        self.mode= mode
         print('You set mode to: ',mode)
         return
-    def set_schedule_messages(self,state):
-        self.scheduled_messages = state
         
     def salvar_dados(self, dados, arquivo):
         # Saves data to a JSON file
@@ -86,23 +96,26 @@ class EmpresaWhatsAppBot:
             logging.error(f"Erro ao inicializar driver: {e}")    
             return False
     
-    def encontrar_contato(self):
+    def encontrar_contato(self,who):
         # Finds and selects a WhatsApp contact or group by name
-        try:
-            
-            search_box = WebDriverWait(self.driver, 10).until(
-                EC.element_to_be_clickable((By.XPATH, '//div[@contenteditable="true"][@data-tab="3"]'))
-            )
-            search_box.clear()
-            search_box.send_keys(self.grupos)
-            contact = WebDriverWait(self.driver, 10).until(
-                EC.element_to_be_clickable((By.XPATH, f'//span[@title="{self.grupos}"]'))
-            )
-            contact.click()
-            return True
-        except Exception as e:
-            logging.error(f"Erro ao encontrar contato {self.grupos}: {e}")
-            return False
+        if who in self.grupos:
+            try:
+                
+                search_box = WebDriverWait(self.driver, 10).until(
+                    EC.element_to_be_clickable((By.XPATH, '//div[@contenteditable="true"][@data-tab="3"]'))
+                )
+                search_box.clear()
+                search_box.send_keys(who)
+                contact = WebDriverWait(self.driver, 10).until(
+                    EC.element_to_be_clickable((By.XPATH, f'//span[@title="{who}"]'))
+                )
+                contact.click()
+                return True
+            except Exception as e:
+                logging.error(f"Erro ao encontrar contato {who}: {e}")
+                return False
+        else:
+            logging.error("Contato não foi habilitado para enviar mensagens.")
 
     def enviar_mensagem(self, mensagem):
         # Sends a message to the currently open WhatsApp chat
@@ -113,9 +126,9 @@ class EmpresaWhatsAppBot:
             message_box.click()  # Ensure the box is focused
             for char in mensagem:
                 message_box.send_keys(char)
-                time.sleep(0.01)  # Small delay can help with reliability
+                # time.sleep(0.01)  # Small delay can help with reliability
             message_box.send_keys(Keys.ENTER)
-            logging.info(f"Mensagem enviada: {mensagem[:50]}...")
+            logging.info(f"Mensagem enviada: {mensagem}...")
             return True
         except Exception as e:
             logging.error(f"Erro ao enviar mensagem: {e}")
@@ -124,13 +137,20 @@ class EmpresaWhatsAppBot:
     def schedule_message(self, date,time,message,who):
         """
         Schedules a message to be sent at a specific time.
+        :param date_str: Date in 'YYYY-MM-DD' format (e.g., '2024-07-20')
         :param time_str: Time in 'HH:MM' 24-hour format (e.g., '14:30')
         :param who: Name of the contact or group
         :param message: Message to send
         """
     
         schedule.day.at(time).do(self.enviar_mensagem(message,who))
-
+    def remove_schedule(self,all=False):
+        if all:
+            pass
+            #remove a all messages
+        elif  not all: 
+            pass
+            #remove a certain message
 
     # def lembrete_reuniao(self, horario, assunto):
     #     # Sends a meeting reminder message to the operational group

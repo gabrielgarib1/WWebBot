@@ -1,6 +1,5 @@
 
 aviso domingo para programar a semana
-testar se ele cria poll, envia arquivo
 
 Configurar comandos responsivos(robo: ler texto)
 integrar com trello(mandar print do board, requisitar alguma informação)

@@ -12,50 +12,56 @@ from inputimeout import inputimeout, TimeoutOccurred
 # Configurar logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
-
 logging.getLogger("WDM").setLevel(logging.WARNING)
-def configurar_horarios(bot):
-    # Schedules all automatic message times
-    # Example: schedule.every().monday.at("09:00").do(bot.weekly_checkin)
-    schedule.every().monday.at("09:00").do(bot.weekly_checkin)
-    schedule.every().friday.at("16:00").do(bot.status_semanal)
-    logging.info("✅ Horários configurados com sucesso! (incluindo troubleshooting)")
+# def configurar_horarios(bot):
+#     # Schedules all automatic message times
+#     # Example: schedule.every().monday.at("09:00").do(bot.weekly_checkin)
+#     schedule.every().monday.at("09:00").do(bot.weekly_checkin)
+#     schedule.every().friday.at("16:00").do(bot.status_semanal)
+#     logging.info("✅ Horários configurados com sucesso! (incluindo troubleshooting)")
 
 def main():
     # Main function to choose between scheduled and manual bot modes
     print("🤖 Iniciando Bot WhatsApp da Empresa...")
     
     # modo = 'schedule'     #'manual' ou 'schedule'
-    modo = 'teste'
-    print("👍Modo: ", modo)
-    grupos = "Testes-chatbot"
-    bot = EmpresaWhatsAppBot(grupos)
     
+    grupos = ["Testes-chatbot"]
+    who=grupos[0]
+    bot = EmpresaWhatsAppBot(grupos)#mode='test' by default
+    print("👍Modo: ",bot.mode)
+    print("Arquivo carregado\n", bot.tarefas)
     # Inicializar WhatsApp Web
     if not bot.inicializar_driver():
         print("❌ Erro ao inicializar. Verifique sua conexão.")
         return
         
     try:
-        if modo == 'schedule':
-            configurar_horarios(bot)
+        if bot.mode == 'schedule':
             print("🚀 Bot funcionando em modo agendado!")
+
+
+
+
             print("📱 Mensagens automáticas configuradas:\n")
-            print("   • 09:00 - Check-in semanal")
-            print("   • 16:00 - Relatório semanal (Sexta)")
             print("\n⚠️  Mantenha este programa rodando!")
-            print("🛑 Pressione Ctrl+C para parar")
             while True:
                 try:
                     bot.driver.title  # This will raise if browser is closed
-                    schedule.run_pending()
+                    try:    
+                        schedule.run_pending()
+                        comando = inputimeout(prompt="> ", timeout=5).strip().lower()
+                    except TimeoutOccurred:
+                        continue  # Timeout, loop again to check browser statu
+                    if comando == 'r':
+                        bot.remove_schedule()
                 except selenium.common.exceptions.WebDriverException as e:
                     if "invalid session id" in str(e) or "disconnected" in str(e):
                         print("🛑 O navegador foi fechado. Encerrando o bot.")
                         break
                     else:
                         raise
-        elif modo == 'teste':
+        elif bot.mode == 'test':
             print("🚀 Bot funcionando em modo manual! Digite 's' para enviar uma mensagem de teste ou 'q' para sair.")
             while True:
                 try:
@@ -67,7 +73,7 @@ def main():
                     except TimeoutOccurred:
                         continue  # Timeout, loop again to check browser statu
                     if comando == 's':
-                        success = bot.encontrar_contato()
+                        success = bot.encontrar_contato(who)
                         if success:
                             # inputimeout(prompt="press enter to send message: ", timeout=5).strip().lower()
                             bot.enviar_mensagem("Mensagem de teste ativada manualmente!")
