@@ -14,32 +14,30 @@ import logging
 import schedule     
 
 
-class EmpresaWhatsAppBot:
-    def __init__(self, grupos,mode='test'):
+class CompanyWhatsAppBot:   
+    def __init__(self, groups, mode='test'):
 
         #code variables
         self.driver = None
+        self.message_id=0
 
         #configurations
         self.set_mode(mode)
-        self.grupos = grupos #limita o acesso a grupos específicos
-
+        
+        #dinamic data
+        self.scheduled_list = [] #lista de dicionários de mensagens agendadas
         #static data
-        # self.bd_path =os.getcwd(), "BD_enterprise")# Ensure BD_enterprise folder exists
-        datas=["tarefas","processos","clientes","funcionarios"]
-        self.criar_bd(datas)        
-        # self.tarefas = self.carregar_dados('tarefas.json')
-        # self.processos = self.carregar_dados('processos.json')
-        # self.clientes = self.carregar_dados('clientes.json')
-        # self.funcionarios = self.carregar_dados('funcionarios.json')
+        self.groups = groups #limita o acesso a grupos específicos em lista
+        data_files = ["tarefas", "processos", "clientes", "funcionarios"]
+        self.create_db(data_files)        
+        
 
-
-    def criar_bd(self, list_json, bd_name='BD_enterprise'):
-        bdfolder_path = os.path.join(os.getcwd(), bd_name)
-        os.makedirs(bdfolder_path, exist_ok=True)
-        self.bd_path = bdfolder_path  # Salva o caminho para uso posterior
+    def create_db(self, list_json, db_name='DB_enterprise'):
+        dbfolder_path = os.path.join(os.getcwd(), db_name)
+        os.makedirs(dbfolder_path, exist_ok=True)
+        self.db_path = dbfolder_path  # Salva o caminho para uso posterior
         for file in list_json:
-            path = os.path.join(bdfolder_path, file + ".json")
+            path = os.path.join(dbfolder_path, file + ".json")
             # Cria o arquivo se não existir
             if not os.path.exists(path):
                 with open(path, 'w', encoding='utf-8') as f:
@@ -48,22 +46,21 @@ class EmpresaWhatsAppBot:
             with open(path, 'r', encoding='utf-8') as f:
                 setattr(self, file, json.load(f))
                 
-    def set_mode(self,mode):
-        self.mode= mode
-        print('You set mode to: ',mode)
+    def set_mode(self, mode):
+        self.mode = mode
         return
         
-    def salvar_dados(self, dados, arquivo):
+    def save_data(self, data, file):
         # Saves data to a JSON file
-        with open(arquivo, 'w', encoding='utf-8') as f:
-            json.dump(dados, f, indent=2, ensure_ascii=False)
+        with open(file, 'w', encoding='utf-8') as f:
+            json.dump(data, f, indent=2, ensure_ascii=False)
 
-    def inicializar_driver(self,profile_path=os.getcwd()):
+    def initialize_driver(self, profile_path=os.getcwd()):
         # Initializes and configures the Firefox WebDriver for WhatsApp Web
         #switch between two service options based on OS
         try:
             firefox_options = webdriver.FirefoxOptions()
-            profile_path+="/User_Data"
+            profile_path += "/User_Data"
             # # Create directory if it doesn't exist
             os.makedirs(profile_path, exist_ok=True)    
             firefox_options.add_argument(f'-profile')
@@ -84,23 +81,22 @@ class EmpresaWhatsAppBot:
             self.driver = webdriver.Firefox(service=Service(GeckoDriverManager().install()), 
                                             options=firefox_options)
             self.driver.get('https://web.whatsapp.com/')
-            print("🚀 Inicializando WhatsApp Web com Firefox...")
-            print("📱 Se for o primeiro login neste perfil, escaneie o QR Code com seu celular.")
-            print("⏰ Aguardando login...")
+            print("🚀 Initializing WhatsApp Web with Firefox...")
+            print("📱 If this is the first login for this profile, scan the QR Code with your phone.")
+            print("⏰ Waiting for login...")
             WebDriverWait(self.driver, 60).until(
                 EC.presence_of_element_located((By.XPATH, '//div[@contenteditable="true"][@data-tab="3"]'))
             )
-            print("✅ Login realizado com sucesso!")
+            print("✅ Login successful!")
             return True
         except Exception as e:
-            logging.error(f"Erro ao inicializar driver: {e}")    
+            logging.error(f"³Error initializing driver: {e}")    
             return False
     
-    def encontrar_contato(self,who):
+    def find_contact(self, who):
         # Finds and selects a WhatsApp contact or group by name
-        if who in self.grupos:
+        if who in self.groups:
             try:
-                
                 search_box = WebDriverWait(self.driver, 10).until(
                     EC.element_to_be_clickable((By.XPATH, '//div[@contenteditable="true"][@data-tab="3"]'))
                 )
@@ -112,29 +108,29 @@ class EmpresaWhatsAppBot:
                 contact.click()
                 return True
             except Exception as e:
-                logging.error(f"Erro ao encontrar contato {who}: {e}")
+                logging.error(f"³Error finding contact {who}: {e}")
                 return False
         else:
-            logging.error("Contato não foi habilitado para enviar mensagens.")
+            logging.error("³Contact is not enabled to receive messages.")
 
-    def enviar_mensagem(self, mensagem):
+    def send_message(self, message):
         # Sends a message to the currently open WhatsApp chat
         try:
             message_box = WebDriverWait(self.driver, 10).until(
                 EC.element_to_be_clickable((By.XPATH, '//div[@contenteditable="true"][@data-tab="10"]'))
             )
             message_box.click()  # Ensure the box is focused
-            for char in mensagem:
+            for char in message:
                 message_box.send_keys(char)
                 # time.sleep(0.01)  # Small delay can help with reliability
             message_box.send_keys(Keys.ENTER)
-            logging.info(f"Mensagem enviada: {mensagem}...")
+            logging.info(f"³Message sent: {message}...")
             return True
         except Exception as e:
-            logging.error(f"Erro ao enviar mensagem: {e}")
+            logging.error(f"³Error sending message: {e}")
             return False
         
-    def schedule_message(self, date,time,message,who):
+    def schedule_message_datetime(self, date, time, message, who,print_info=False,everyday=False):
         """
         Schedules a message to be sent at a specific time.
         :param date_str: Date in 'YYYY-MM-DD' format (e.g., '2024-07-20')
@@ -142,52 +138,87 @@ class EmpresaWhatsAppBot:
         :param who: Name of the contact or group
         :param message: Message to send
         """
+        
+        
+        def automate_send():
+            self.find_contact(who)
+            self.send_message(message)
+            if not everyday:
+            #se everyday=True, irá mandar a mensagem todo dia 
+                return schedule.CancelJob
+        schedule.every().day.at(time).do(automate_send).tag(date,time,message).tag(id)
+        self.scheduled_list.append({"ID":self.message_id,"Datetime":date+" "+ time ,"Message":message, "Who": who})
+        self.message_id+=1
+        
+        if print_info:
+            logging.info(f"³Message scheduled: {message}...")
+            # print("INFO - Message scheduled to: ",time,", ",date)
+
+
+    def schedule_message_timer(self, timer,message, who, print_info=False):
+        # timer são minutes antes de mandar a mensagem
+        #datetime.now() retorna YYYY-MM-DD HH:MM:SS.\mu_seconds (6 casas decimais)
+        send_time = (datetime.now() + timedelta(minutes=timer))  #formato aceito por schedule é HH:MM:SS 
+        
     
-        schedule.day.at(time).do(self.enviar_mensagem(message,who))
-    def remove_schedule(self,all=False):
+    def remove_schedule(self,tag_id='', all=False):
+        """
+        remove mensagens agendadas, no while loop, dado um id tag(schedule)
+        inicializado com o ponteiro mensagem
+        """
         if all:
-            pass
+            schedule.clear()
+            self.scheduled_list.clear()
             #remove a all messages
-        elif  not all: 
-            pass
+        elif not all: 
+            schedule.clear(tag_id)
+            #loop nao funciona, deleta mais de uma(ainda nao sei quais está deletando)
+            for index in range(len(self.scheduled_list)):
+                for dict in self.scheduled_list:
+                    if dict["ID"]==tag_id:
+                        self.scheduled_list.pop(index)
+                        break
+          
+
             #remove a certain message
-
-    # def lembrete_reuniao(self, horario, assunto):
+    def generate_ai_message(self,context):
+        """
+        use api AI to generate message
+        """
+        AImessage="... in development"
+        return AImessage
+    # def meeting_reminder(self, time, subject):
     #     # Sends a meeting reminder message to the operational group
-    #     mensagem = f"""📅 LEMBRETE DE REUNIÃO
+    #     message = f"""📅 MEETING REMINDER
 
-    #     ⏰ Horário: {horario}
-    #     📋 Assunto: {assunto}
-    #     📍 Local: Sala de reunião
+    #     ⏰ Time: {time}
+    #     📋 Subject: {subject}
+    #     📍 Location: Meeting room
 
-    #     Confirmem presença: 👍 = Sim | 👎 = Não"""
-    #     if self.encontrar_contato(self.grupos[0]):
-    #         self.enviar_mensagem(mensagem)
+    #     Confirm attendance: 👍 = Yes | 👎 = No"""
+    #     if self.find_contact(self.groups[0]):
+    #         self.send_message(message)
 
-
-    def consultar_processo(self, nome_processo):   
+    def consult_process(self, process_name):   
         '''
         pass implementation, maybe can be a consulter for links in a chat group 
         for machine - use for obtaining any info
         '''
         pass         
 
-
-    def adicionar_tarefa(self, usuario, descricao):
+    def add_task(self, user, description):
         '''weekly_checkin
         Another mathod to a future implementation of chat user - machine
         '''
         pass
 
-
-    def listar_tarefas_pendentes(self):
+    def list_pending_tasks(self):
         '''
         Another mathod to a future implementation of chat user - machine
         '''
         pass
 
-
-    def processar_mensagens_recebidas(self):
+    def process_received_messages(self):
         ''' Method very simple, maybe a set of methods will do this'''
         pass
 
