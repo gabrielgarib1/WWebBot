@@ -138,7 +138,7 @@ class CompanyWhatsAppBot:
         :param who: Name of the contact or group
         :param message: Message to send
         """
-        
+        #it just schedule for today, and not an especific day
         
         def automate_send():
             self.find_contact(who)
@@ -155,11 +155,11 @@ class CompanyWhatsAppBot:
             # print("INFO - Message scheduled to: ",time,", ",date)
 
 
-    def schedule_message_timer(self, timer,message, who, print_info=False):
+    def schedule_message_timer(self, timer,message, who, print_info=False,everyday=False):
         # timer são minutes antes de mandar a mensagem
         #datetime.now() retorna YYYY-MM-DD HH:MM:SS.\mu_seconds (6 casas decimais)
-        send_time = (datetime.now() + timedelta(minutes=timer))  #formato aceito por schedule é HH:MM:SS 
-        
+        send_time = (datetime.now() + timedelta(minutes=timer)).strftime('%H:%M:%S') #formato aceito por schedule é HH:MM:SS 
+        self.schedule_message_datetime("not implemented",send_time,message,who,print_info,everyday)#first arg is date
     
     def remove_schedule(self,tag_id='', all=False):
         """
@@ -173,12 +173,10 @@ class CompanyWhatsAppBot:
         elif not all: 
             schedule.clear(tag_id)
             #loop nao funciona, deleta mais de uma(ainda nao sei quais está deletando)
-            for index in range(len(self.scheduled_list)):
-                for dict in self.scheduled_list:
-                    if dict["ID"]==tag_id:
-                        self.scheduled_list.pop(index)
-                        break
-          
+            for i in range(len(self.scheduled_list)-1,-1,-1):
+                if self.scheduled_list[i]["ID"]==tag_id:
+                    self.scheduled_list.pop(i)
+                    break         
 
             #remove a certain message
     def generate_ai_message(self,context):

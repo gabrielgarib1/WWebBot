@@ -52,36 +52,24 @@ def main():
                             bot.schedule_message_datetime(date,time,message,who,print_info=True)
                         case 't':#nao implementado
                             timer=15
+                            message="test timer scheduled"
                             bot.schedule_message_timer(timer,message,who,print_info=True)
-                        case 'd':   #implementar detecção de lista de schedule vazia
-                            while True:
+                        case 'd':
+                            if len(bot.scheduled_list)>0:    
                                 try:
-                                    index_to_remove= inputimeout(prompt="   Enter index of the message to be removed: \n>",
-                                                         timeout=5).strip().lower()
+                                    index_to_remove= inputimeout(prompt="   Enter index of the message to be removed: \n> ",
+                                                        timeout=5).strip().lower()
                                     index_to_remove=int(index_to_remove)
-                                    # print("tipo: ",type(index_to_remove),"\n valor: ",index_to_remove,
-                                    #       "\n first condition: ",index_to_remove>=0,"\n second condition: "
-                                    #       , index_to_remove<bot.message_id,"\n")
-                                    if index_to_remove>=0 and index_to_remove<bot.message_id:
-                                        print("worked")
-                                        bot.remove_schedule(index_to_remove)#não está funcionando
-                                        break
-                                    else:
-                                        print("\n   Index don't exist. Please insert a valid index or 'q' to back to menu.\n")
-                                        continue
-                                except TimeoutOccurred:
-                                    break   
+                                    bot.remove_schedule(index_to_remove)
                                 except:
-                                    if index_to_remove=='q':
-                                        break
-                                    else:
-                                        print("\n   Not valid. Please insert a valid index or 'q' to back to menu.\n")
-                                        continue   
+                                    print("\n   Not valid. Please insert a valid index or 'q' to back to menu.\n")
+                                                                      
+                            else:
+                                print("There aren't scheduled messages.\n")
                         case 'l':
                             print("\n Number of scheduled messages: ",len(bot.scheduled_list))
                             for dicts in bot.scheduled_list:
                                 print(dicts)
-                                # print(json.dumps(dicts,indent=4))
                         case 'c':
                             bot.remove_schedule(all=True)
                         case 'q':
