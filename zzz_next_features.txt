@@ -1,8 +1,0 @@
-
-aviso domingo para programar a semana
-
-Configurar comandos responsivos(robo: ler texto)
-integrar com trello(mandar print do board, requisitar alguma informação)
-
-
-só funciona com o pc ligado e rodando?(talvez precise de server)
